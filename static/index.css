@@ -1,0 +1,42 @@
+body{
+    background-color:#fcfcfc;
+    font-family: sans-serif;
+}
+.m-container{
+    text-align: center;
+    margin-top: 10%;
+    margin-left: auto;
+    margin-right: auto;
+    width: 350px;
+}
+.lang-container{
+    background: linear-gradient(0deg, #474bff 0%, #bc48ff 100%);
+    padding: 20px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+}
+#disp-text{
+    border: 2px solid;
+    border-color: #bc48ff;
+    border-radius: 10px;
+    color: #bc48ff;
+    margin-top: 20px;
+    display: none;
+}
+#listen{
+    color: #bc48ff;
+    margin-top: 20px;
+    text-align: center;
+    display: none;
+}
+#listen img{
+    border-radius: 10px;
+    width: 400px;
+    height: 100px;
+    color: #bc48ff;
+    float: left;
+}
+#listen p{
+    font-family: sans-serif;
+    text-align: center;
+}

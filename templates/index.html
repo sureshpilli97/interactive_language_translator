@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Intractive Language Translater</title>
+        <link rel="stylesheet" href="{{url_for('static',filename='index.css')}}">
+        <script type="text/javascript" src="{{url_for('static',filename='index.js')}}">
+
+        </script>
+    </head>
+    <body>
+        <div class="m-container">
+            <form method="POST" action="/record">
+                    <div class="lang-container">
+                        <label for="language">Select Language </label>
+                        {{form.languages(class='form-control')}}
+                    </div>
+                <input type="submit" value="click to speek" onclick="speek()">
+                <input type="button" value="show in text" onclick="disp()">
+            </form>
+            <form method="POST" action="/result">
+                <div id="listen">
+                    <img src="https://i.pinimg.com/originals/2f/f8/c0/2ff8c045bc72868ac3025efe4ef67f4e.gif">
+                    <p>listening........</p>
+                    <input type="submit" value="stop" onclick="stop_listen()">
+                </div>
+                <div id="disp-text">
+                    {% for message in get_flashed_messages()%}
+                        <p>{{message}}</p>
+                    {% endfor %}
+                </div>
+            </form>
+        </div>
+    </body>
+</html>
