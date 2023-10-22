@@ -2,13 +2,13 @@
 
 # import web app flask packages
 
-from flask import Flask,request,render_template,flash
+from flask import Flask,request,render_template,flash,send_file
 from wtforms import SelectField
 from flask_wtf import FlaskForm 
+from time import sleep
 
-# import translate and language detection packages
+# import translate packages
 
-from langdetect import detect
 import googletrans
 
 # import speech recognization and text to speech conversion packages
@@ -31,68 +31,125 @@ def languages():
 
 # translate text to another language and convert to audio
 
-def transalate_to(text,m):
-    mytext=translate_text.translate(text=text,dest=m).text
-    #print(mytext)
-    voice = gTTS(text=mytext, slow=False)
-    #voice.save("D:/mini project/templates/lang.mp3")
-    return mytext
+def transalate_to(text,src_lang,dest_lang):
+    translation=translate_text.translate(text=text,src=src_lang,dest=dest_lang)
+    my_text=translation.text
+    my_audio = "static/translate_lang.mp3"  # File path for saving the audio
+    try:
+        voice = gTTS(text=my_text, slow=False)
+        voice.save(my_audio)
+    except Exception as e:
+        print("Error in audio conversion:", e)
+        voice=False
+    return my_text,voice
 
 # speech recoginizatation and  convert to text
 
 def take_speech():
-    with sr.Microphone() as source:
-        print("speek.......")
-        a=r.listen(source)
+    with sr.Microphone() as source: # accessing microphone 
+ 
+        r.energy_threshold = 300  # Adjust this threshold for quality recoginization
+        r.dynamic_energy_threshold = False
+        r.pause_threshold = 0.8
+        #print("Speek......")
+
+        # noise reduction and listen voice
+
+        r.adjust_for_ambient_noise(source) 
+        a=r.listen(source,timeout=None)
         try:
-            text=r.recognize_google(a)
-            print(text)
+            text=r.recognize_google(a) # voice to text
             return text
         except sr.UnknownValueError:
             return "Not listened"
-        except:
+        except sr.RequestError:
             return "Network Problem"
+        except Exception:
+            return "try after some time"
         
 # web application 
-
-text,s,f,m="","",1,""
-
-# Flask form creation in HTML page
+# Flask form creation for web page
 
 class Form(FlaskForm):
-    languages=SelectField('languages',choices=languages())
-web=Flask(__name__)
-web.secret_key='1236547890'
-@web.route("/home")
+    l=languages()
+    from_languages=SelectField('languages',choices=l)
+    languages=SelectField('languages',choices=l)
+
+# Flask app creation for web app
+
+app = Flask(__name__, static_url_path='/static')
+app.secret_key='1236547890'
+
+# route home pagetext=""
+
+get_speech,on=False,False
+text,speek="",""
+
+@app.route("/")
 def home():
-    global on,text
-    text=""
-    on=False
-    form=Form()
-    return render_template("index.html",form=form)
-@web.route("/record",methods=['GET','POST'])
+    return render_template("index.html",form=Form())
+@app.route("/record",methods=['GET','POST'])
 def record():
-    global on 
+    global text,speek,get_speech,user_lang,required_lang,on
+    text=""
     on=True
-    global text,s,f,m
-    m=request.form.to_dict()['languages']
-    while on:
-        s=take_speech()
-        print(s)
-        if s not in ["Not listened","Network Problem"]:
-            text+=s
-            f=0
+    get_speech=False
 
-# getting data from HTML page
+    # getting data from web page form
 
-@web.route("/result",methods=['GET','POST'])
-def result():
-    global text,s,f,m
-    if f==0:
-        d=detect(s) # language detection
-        mytext=transalate_to(text,m)
-        flash(text+"("+d+")")
-        flash(mytext+" ("+m+")")
-    else:
-        flash(s)
+    on_mic=request.form.to_dict()['acess-phone']
+    user_lang=request.form.to_dict()['from_languages']
+    required_lang=request.form.to_dict()['languages']
+    on_text=request.form.to_dict()['give_text']
+    print(on_text)
+    if on_text!="":
+        text=on_text
+        get_speech=True
+        speek='Somethng Problem.....'
+        return result()
+    if on_mic=="True":
+        while on:
+            speek=take_speech()
+            if speek not in ["Not listened","Network Problem","try after some time"]:
+                text+=" "+speek
+                get_speech=True
     return home()
+
+# Result to web page
+
+@app.route("/file_get",methods=['GET','POST'])
+def file_get():
+    global speek,text,user_lang,required_lang,get_speech
+    file=request.files['file']
+    if file.filename!='':
+        text=file.read().decode('utf-8')
+        get_speech=True
+        user_lang=request.form.to_dict()['l']
+        required_lang=request.form.to_dict()['f']
+    else:
+        speek='File not uploaded refresh and retry.....'
+    return result()
+@app.route("/result",methods=['GET','POST'])
+def result():
+    global text,on,user_lang,required_lang,get_speech,speek
+    on=False
+    if get_speech:
+        sleep(4)
+        text=text.lstrip(" ")
+        my_text,voice=transalate_to(text,user_lang,required_lang)
+        flag=text+" ("+user_lang+")"
+        my_text=my_text+" ("+required_lang+")"
+        text=""
+        if voice:
+            return render_template("index.html",message=flag,msg=my_text,form=Form(),my_audio="translate_lang.mp3")
+        else:
+            return home()
+        
+    flash(speek)
+    text=""
+    return home()
+
+# Main function for the app
+
+if __name__ == "__main__":
+    app.run()
