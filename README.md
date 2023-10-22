@@ -1,1 +1,1 @@
-# interactive_language_translator flask app
+# interactive_language_translator
